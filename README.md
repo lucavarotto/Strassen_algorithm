@@ -110,175 +110,39 @@ and dynamic peeling. `grafici.Rmd` reads these files directly.
 
 ---
 
-## Requirements and setup
-
-The algorithms need Python and NumPy only:
-
-```bash
-pip install numpy
-```
-
-Reproducing the plots additionally needs R with `ggplot2` and `rmarkdown`, and
-rebuilding the report needs a LaTeX distribution. The code was developed with
-Python 3.12.2 and NumPy 1.26.4.
-
----
-
-## Usage
-
-### Multiplying two matrices
-
-```python
-import numpy as np
-import strassen_algorithms as sa
-
-A = np.random.randint(-100, 100, size=(998, 825), dtype='l')
-B = np.random.randint(-100, 100, size=(825, 659), dtype='l')
-
-C = sa.Strassen_static_padding(A, B, 128)      # Q = 128
-
-np.array_equal(C, np.matmul(A, B))             # True on integer matrices
-```
-
-The three variants accept any pair of conformable matrices, odd dimensions
-included, and `Q = 128` is a reasonable default (see the benchmarks below).
-Lowering `Q` deepens the recursion; raising it enlarges the matrices handed to
-`numpy.matmul` at the leaves.
-
-### Running the benchmarks
-
-`strassen_testing.py` contains one function per experiment. Pick one in the
-`__main__` block, leaving the others commented out, since each run overwrites
-its own file and takes minutes; the `dataset/` directory must exist.
-
-```python
-if __name__ == "__main__":
-
-    different_q(600, 1000, n_test=30, file_name="dataset/q_test.txt", qmin=4, qmax=10)
-    #sparse_dense_matrix(600, 1000, 128, 40)
-    #lunghe_vs_larghe(800, 1200, 64, 60)
-    #increasing_dimension(200, 400, 128, 75)
-    #floating_time(600, 1000, 128, 40)
-    #floating_error(600, 1000, 128, 40, 8)
-```
-
-```bash
-python strassen_testing.py
-```
-
-Every experiment fixes `random.seed(1234)`, so the shapes of the generated
-matrices are reproducible. Timings use `time.process_time()`, which measures CPU
-time and is therefore insensitive to other load on the machine.
-
-### Rebuilding the plots
-
-```bash
-Rscript -e "rmarkdown::render('grafici.Rmd')"
-```
-
----
-
 ## Results
 
-The figures below are measured on an Intel Core i5-6300U at 2.40 GHz with 16 GB
-of RAM, Python 3.12.2 and NumPy 1.26.4. Times are means over the sample, in
-seconds, and the fastest algorithm of each group is in bold.
+Measured on an Intel Core i5-6300U at 2.40 GHz with 16 GB of RAM, Python
+3.12.2 and NumPy 1.26.4. Times are means over the sample, in seconds; the
+fastest algorithm of each row is in bold, and the report discusses every
+experiment in full.
 
-### Choosing the crossover point
+| Sample | Row by column | Dynamic padding | Static padding | Dynamic peeling |
+| --- | --- | --- | --- | --- |
+| Dense integers, `Q=128`, n=40 | 0.703 | 0.354 | **0.348** | 0.350 |
+| Sparse, `Q=128`, n=40 | **0.063** | 0.198 | 0.179 | 0.192 |
+| Floating point, `Q=128`, n=40 | **0.064** | 0.160 | 0.117 | 0.131 |
+| A long and B wide, `Q=64`, n=60 | 0.083 | 0.146 | **0.077** | 0.152 |
+| Deliberately low `Q=8`, n=10 | **0.11** | 10.25 | 1.53 | 10.23 |
 
-Thirty pairs of matrices with sides between 600 and 1000, each multiplied with
-every `Q` in `{16, 32, 64, 128, 256, 512}`. The best performance is reached
-around `Q = 64` and `Q = 128`. Below that the recursion goes too deep and all
-three variants lose badly to `numpy.matmul`; above it the matrices at the leaves
-grow, and the three variants converge back to the row-by-column product.
-
-`dataset/q_test.txt` was regenerated later on a newer machine, where the same
-experiment places the optimum slightly higher, between `Q = 128` and `Q = 256`,
-with the three variants about 2.3 times faster than `numpy.matmul` (0.20 s
-against 0.47 s). The shape of the curve is unchanged.
-
-With a deliberately low `Q = 8` (`dataset/minimum_q.txt`, 10 pairs) the gap is
-dramatic:
-
-| Algorithm | Mean time (s) |
-| --- | --- |
-| Row by column | **0.11** |
-| Static padding | 1.53 |
-| Dynamic peeling | 10.23 |
-| Dynamic padding | 10.25 |
-
-### Dense vs sparse matrices
-
-Two samples of 40 pairs, sides between 600 and 1000, `Q = 128`. The sparse
-matrices have 50% of their cells set to zero.
-
-| Algorithm | Dense (s) | Sparse (s) |
-| --- | --- | --- |
-| Row by column | 0.703 | **0.063** |
-| Dynamic padding | 0.354 | 0.198 |
-| Static padding | **0.348** | 0.179 |
-| Dynamic peeling | 0.350 | 0.192 |
-
-On dense matrices the three variants are nearly twice as fast as the
-row-by-column product. On sparse matrices the picture reverses: `numpy.matmul`
-is about three times faster than any of them.
-
-### Unbalanced shapes
-
-Three samples of 60 pairs, `Q = 64`. A matrix is "long" when it has about ten
-times more rows than columns, and "wide" in the opposite case.
-
-| Algorithm | A wide (s) | A long, B wide (s) | B long (s) |
-| --- | --- | --- | --- |
-| Row by column | 0.165 | 0.083 | 0.095 |
-| Dynamic padding | 0.095 | 0.146 | 0.109 |
-| Static padding | 0.103 | **0.077** | 0.102 |
-| Dynamic peeling | **0.073** | 0.152 | **0.076** |
-
-Static padding is the most stable across the three groups, while dynamic padding
-and dynamic peeling are roughly twice as slow in the "A long, B wide" case. The
-crossover criteria explain much of this: static padding only looks at the
-smallest dimension, so with a minimum between 80 and 120 and `Q = 64` it always
-stops at the second recursive call, whereas the geometric mean used by the other
-two allows a deeper recursion.
-
-### Integer vs floating point entries
-
-Forty pairs, sides between 600 and 1000, `Q = 128`.
-
-| Algorithm | Integer (s) | Floating point (s) |
-| --- | --- | --- |
-| Row by column | 0.703 | **0.064** |
-| Dynamic padding | 0.354 | 0.160 |
-| Static padding | 0.348 | 0.117 |
-| Dynamic peeling | 0.350 | 0.131 |
-
-Floating point matrices are multiplied faster by every algorithm, but the
-advantage over `numpy.matmul` disappears entirely.
-
-### Numerical stability
-
-Rounding the result matrices to 8 decimal places, the three variants share on
-average only **98%** of their entries with the row-by-column product; at 10
-decimal places the agreement collapses to **16%**. The instability is real, as
-the extra additions and subtractions accumulate rounding error, but the
-deviations are infinitesimal and may well be irrelevant in practice.
-
-### Growing dimensions
-
-Over 75 pairs of increasing size with `Q = 128`, the advantage of the three
-variants grows with the geometric mean of the dimensions, and it is already
-visible well below the `1000 x 1000` threshold the algorithm was long believed
-to require.
-
-### Summary
-
-* `Q` between 64 and 128 is where the three variants perform best.
+* `Q` between 64 and 128 is where the three variants perform best. Below that
+  the recursion goes too deep and they lose badly to `numpy.matmul`; above it
+  the matrices at the leaves grow and the advantage fades.
 * On dense integer matrices they are about twice as fast as `numpy.matmul`, and
-  the gap widens with size.
-* None of them is advisable for sparse matrices or floating point entries.
-* Dynamic padding and dynamic peeling degrade on strongly unbalanced shapes;
-  static padding is the most consistent of the three overall.
+  the gap widens with the size of the operands, already well below the
+  `1000 x 1000` threshold the algorithm was long believed to require.
+* None of them is advisable for sparse matrices or floating point entries,
+  where the row-by-column product wins by a factor of two or three.
+* Dynamic padding and dynamic peeling degrade on strongly unbalanced shapes,
+  because they stop the recursion on the geometric mean of the dimensions,
+  while static padding looks at the smallest one and stays the most consistent.
+* Rounding the results to 8 decimal places, the three variants share 98% of
+  their entries with the row-by-column product; at 10 decimal places the
+  agreement collapses to 16%. The instability is real but infinitesimal.
+
+`dataset/q_test.txt` was regenerated later on a newer machine, where the
+optimum sits between `Q = 128` and `Q = 256` and the variants are 2.3 times
+faster than `numpy.matmul`. The shape of the curve is unchanged.
 
 ---
 
