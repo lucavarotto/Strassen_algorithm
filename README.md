@@ -88,14 +88,14 @@ strassen_algorithm/
 │   └── error_floating.txt        # sample used for the numerical error analysis
 ├── figures/                      # plots produced by grafici.Rmd
 ├── Report/
-│   ├── Varotto_Luca_report.pdf   # the report (Italian)
-│   ├── Varotto_Luca_report.tex   # its LaTeX source
-│   ├── tau-book.cls              # tau-book template, CC BY 4.0
-│   ├── tau.sty                   #   "
-│   └── tau-book-cls-README.md    # template documentation and attribution
+│   └── Varotto_Luca_report.pdf   # the report (Italian)
 ├── .gitignore
 └── README.md
 ```
+
+The LaTeX source of the report, the *tau-book* template files and the build
+output live in the local working folder but stay out of the repository, see
+`.gitignore`: of the report, only the compiled PDF is published here.
 
 Every CSV in `dataset/` shares the same header:
 
@@ -165,4 +165,4 @@ faster than `numpy.matmul`. The shape of the curve is unchanged.
 Padua. Report written for the *Sistemi di Elaborazione 2* exam, 3 April 2024.
 
 The report is typeset with the *tau-book* template by Guillermo Jimenez,
-distributed under CC BY 4.0; see `Report/tau-book-cls-README.md`.
+distributed under CC BY 4.0.
