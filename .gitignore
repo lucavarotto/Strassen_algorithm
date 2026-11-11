@@ -1,0 +1,7 @@
+paper/
+grafici.pdf
+.Rhistory
+.RData
+__pycache__/
+Report/outputTeX/
+*.synctex.gz

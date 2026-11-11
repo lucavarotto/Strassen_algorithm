@@ -192,7 +192,7 @@ ggplot(plot_data, aes(x = media_geom, y = tempo_medio, color = algoritmo, shape 
 
 ```{r q_basso}
 rm(list=ls())
-dat <- read.table("dataset/minimum_q", header=T, sep=",")
+dat <- read.table("dataset/minimum_q.txt", header=T, sep=",")
 
 np <- nrow(dat)
 n <- length(unique(dat$ID))
