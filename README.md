@@ -74,7 +74,7 @@ function handles the eight parity combinations of `a`, `b` and `c` explicitly.
 ## Repository structure
 
 ```
-strassen_algorithm/
+Strassen_algorithm/
 ├── strassen_algorithms.py        # the four implementations and their helpers
 ├── strassen_testing.py           # benchmark suite; writes the CSVs in dataset/
 ├── grafici.Rmd                   # R Markdown: reads dataset/, writes figures/
